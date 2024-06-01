@@ -302,7 +302,7 @@ su - root
     Este comando abrirá o arquivo Cron do Apache com o editor de texto Vi. Insira esta linha
 
     ```
-    */5  *  *  *  * php -f /var/www/nextcloud/cron.php
+    */5  *  *  *  * php -f /var/www/html/nextcloud/cron.php
     ```
 
     Acesse as configurações do Nextcloud > Administração > Configurações básicas > Tarefas em segundo plano e selecione a opção "Cron".
