@@ -1,6 +1,6 @@
 ## Instalação e configuração do Nextcloud no Oracle Linux 9
 
-*19 de julho de 2023, Thiago S. Ferreira*
+*1 de junho de 2024, Thiago S. Ferreira*
 
 A maioria dos comandos aqui precisam ser executados como usuário `root`, então, para evitar ter que digitar o `sudo` sempre, faça login no shell como `root`:
 
@@ -59,7 +59,7 @@ su - root
     systemctl enable httpd.service
     systemctl start httpd.service
     ```
-    1. **PHP**
+ 4. **PHP**
 
        Adicione o repositório Remi:
 
@@ -98,14 +98,14 @@ su - root
        systemctl enable --now php-fpm.service
        systemctl restart httpd
        ```
- 4. **Redis**
+ 5. **Redis**
 
     ```
     dnf install -y redis
     systemctl enable redis.service
     systemctl start redis.service
     ```
- 5. **Banco de dados MariaDB**
+ 6. **Banco de dados MariaDB**
 
     Instalar o MariaDB:
 
@@ -179,7 +179,7 @@ su - root
     ```
 
     (substitua 'Senha' por uma senha definida por você).
- 6. **Baixar o Nextcloud e mover para o local apropriado**
+ 7. **Baixar o Nextcloud e mover para o local apropriado**
 
     Baixar o pacote, extrair e mover para o local apropriado:
 
@@ -216,7 +216,7 @@ su - root
     firewall-cmd --zone=public --add-service=https --permanent
     firewall-cmd --reload
     ```
- 7. **Configuração do SELinux**
+ 8. **Configuração do SELinux**
 
     Execute estes comandos:
 
@@ -247,15 +247,15 @@ su - root
     ```
 
     Ative novamente só quando precisar fazer atualização via interface web.
- 8. **Acessar a interface e prosseguir com a instalação**
+ 9. **Acessar a interface e prosseguir com a instalação**
 
     No navegador insira o endereço IP do servidor nextcloud. Preencha as informações e clique em "Instalar".
 
- 9. **Limite de memória do PHP**
+ 10. **Limite de memória do PHP**
 
     O Nextcloud recomenda um limite de, pelo menos, 512M para o PHP. Edite o arquivo `/etc/php.ini` e ajuste o valor da variável `memory_limit` para que 512M. Caso seu sistema tenha bastante memória RAM disponível, você pode utilizar um valor maior. Feito esse ajuste, execute o comando `systemctl restart php-php.service`.
 
-10. **Memory caching**
+11. **Memory caching**
 
     Configurar PHP Opcache:
 
@@ -276,14 +276,23 @@ su - root
     ```
     
     Em seguida, reinicie o PHP com o comando `systemctl restart php-php.service`.
-11. **Default phone region**
+12. **Default phone region**
 
     Adicione ao arquivo config.php do Nextcloud esta linha:
 
     ```
       'default_phone_region' => 'BR',
     ```
-12. **Tarefas em segundo plano**  
+
+13. **Pretty URLs**
+    Esta configuração remove o `index.php` das URLs do Nextcloud, tornando-as mais curtas e agradáveis.
+    Adicione as seguintes linhas ao arquivo `config.php`, substituindo `example.org` pelo endereço do seu Nextcloud:
+    ```
+    'overwrite.cli.url' => 'https://example.org',
+    'htaccess.RewriteBase' => '/nextcloud',
+    ```
+
+14.  **Tarefas em segundo plano**  
     Execute o comando:
 
     ```
