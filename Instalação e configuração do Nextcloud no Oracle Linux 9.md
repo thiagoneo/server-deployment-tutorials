@@ -252,9 +252,10 @@ su - root
     No navegador insira o endereço IP do servidor nextcloud. Preencha as informações e clique em "Instalar".
 
  9. **Limite de memória do PHP**
-     O Nextcloud recomenda um limite de, pelo menos, 512M para o PHP. Edite o arquivo `/etc/php.ini` e ajuste o valor da variável `memory_limit` para que 512M. Caso seu sistema tenha bastante memória RAM disponível, você pode utilizar um valor maior.
- 
- 11. **Memory caching**
+
+    O Nextcloud recomenda um limite de, pelo menos, 512M para o PHP. Edite o arquivo `/etc/php.ini` e ajuste o valor da variável `memory_limit` para que 512M. Caso seu sistema tenha bastante memória RAM disponível, você pode utilizar um valor maior. Feito esse ajuste, execute o comando `systemctl restart php-php.service`.
+
+10. **Memory caching**
 
     Configurar PHP Opcache:
 
@@ -273,6 +274,8 @@ su - root
            'port' => 6379,
       ],
     ```
+    
+    Em seguida, reinicie o PHP com o comando `systemctl restart php-php.service`.
 11. **Default phone region**
 
     Adicione ao arquivo config.php do Nextcloud esta linha:
