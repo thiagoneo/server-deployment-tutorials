@@ -2,11 +2,14 @@
 
 *1 de junho de 2024, Thiago S. Ferreira*
 
-A maioria dos comandos aqui precisam ser executados como usuário `root`, então, para evitar ter que digitar o `sudo` sempre, faça login no shell como `root`:
-
-```
-su - root
-```
+**Considerações iniciais**
+1. A maioria dos comandos aqui precisam ser executados como usuário `root`, então, para evitar ter que digitar o `sudo` sempre, faça login no shell como `root`:
+ 
+ ```
+ su - root
+ ```
+2. Ao longo do tutorial, usaremos o domínio **nextcloud.exemplo.local** e IP **192.168.44.105** para nosso servidor Nextcloud. **Atente-se para substituir esses valores pelo nome e IP do seu servidor nos arquivos de configuração e comandos que serão executados!!**
+3. Neste exemplo, criamos um servidor acessível apenas localmente, o hostname **nextcloud.exemplo.local** é gerenciado por um servidor DNS interno e certificados SSL criados com CA local. Para um tutorial de como criar uma CA local e gerar certificados autoassinados, veja: https://www.digitalocean.com/community/tutorials/how-to-set-up-and-configure-a-certificate-authority-ca-on-centos-8.
 
  1. **Habilitar o repositório EPEL:**
 
@@ -28,32 +31,71 @@ su - root
     Instale o Apache com este comando:
 
     ```
-    dnf install -y httpd
+    dnf install -y httpd mod_ssl
     ```
 
     Crie o arquivo `/etc/httpd/conf.d/nextcloud.conf`, com o seguinte conteúdo:
+```
+<VirtualHost *:443>
+Protocols h2 http/1.1
+  ServerName  nextcloud.exemplo.local
+  ServerAlias 192.168.44.105 nextcloud.exemplo.local
 
-    ```
-    <VirtualHost *:80>
-      DocumentRoot /var/www/html/nextcloud/
-      ServerName  your.server.com
-    
-      <Directory /var/www/html/nextcloud/>
-        Require all granted
-        AllowOverride All
-        Options FollowSymLinks MultiViews
-    
-        <IfModule mod_dav.c>
-          Dav off
-        </IfModule>
-    
-      </Directory>
-    </VirtualHost>
-    ```
+  DocumentRoot /var/www/html/nextcloud/
 
-    Substitua "80" e "your.server.com" pela porta e domínio, respectivamente.
+    RewriteEngine On
+    RewriteCond %{HTTP_HOST} !^nextcloud\.exemplo\.local$ [NC]
+    RewriteRule ^/(.*)$ https://nextcloud.exemplo.local/$1 [R=301,L]
 
-    Habilite, então, o serviço do Apache:
+  <Directory /var/www/html/nextcloud/>
+    Require all granted
+    AllowOverride All
+    Options FollowSymLinks MultiViews
+
+    <IfModule mod_dav.c>
+      Dav off
+    </IfModule>
+
+    <IfModule mod_headers.c>
+      Header always set Strict-Transport-Security "max-age=15552000; includeSubDomains"
+    </IfModule>
+
+  </Directory>
+
+  SSLEngine on
+  SSLCertificateFile /etc/pki/tls/certs/nextcloud.crt
+  SSLCertificateKeyFile /etc/pki/tls/private/nextcloud.key
+</VirtualHost>
+
+<VirtualHost *:80>
+  ServerName nextcloud.exemplo.local
+  ServerAlias 192.168.44.105 nextcloud.exemplo.local
+  Redirect permanent / https://nextcloud.exemplo.local/
+</VirtualHost>
+```
+Note que no exemplo acima estamos utilizando HTTPs/SSL, e o certificado e a chave estão localizados em `/etc/pki/tls/certs/nextcloud.crt` e `/etc/pki/tls/private/nextcloud.key`, respectivamente.
+
+Caso vá utilizar o Nextcloud sem HTTPS, utilize o modelo de arquivo de configuração abaixo:
+
+```
+<VirtualHost *:80>
+  DocumentRoot /var/www/html/nextcloud/
+  ServerName  nextcloud.exemplo.local
+
+  <Directory /var/www/html/nextcloud/>
+    Require all granted
+    AllowOverride All
+    Options FollowSymLinks MultiViews
+
+    <IfModule mod_dav.c>
+      Dav off
+    </IfModule>
+
+  </Directory>
+</VirtualHost>
+```
+
+    Habilite o serviço do Apache:
 
     ```
     systemctl enable httpd.service
@@ -171,14 +213,14 @@ su - root
     No prompt do Mysql, insira estes comandos:
 
     ```
-    CREATE USER 'nextcloud'@'localhost' IDENTIFIED BY 'Senha';
+    CREATE USER 'nextcloud'@'localhost' IDENTIFIED BY 'Sua-Senha';
     CREATE DATABASE IF NOT EXISTS nextcloud CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
     GRANT ALL PRIVILEGES on nextcloud.* to 'nextcloud'@'localhost';
     FLUSH privileges;
     quit;
     ```
 
-    (substitua 'Senha' por uma senha definida por você).
+    (substitua 'Sua-Senha' por uma senha definida por você).
  7. **Baixar o Nextcloud e mover para o local apropriado**
 
     Baixar o pacote, extrair e mover para o local apropriado:
@@ -247,15 +289,16 @@ su - root
     ```
 
     Ative novamente só quando precisar fazer atualização via interface web.
+    
  9. **Acessar a interface e prosseguir com a instalação**
 
-    No navegador insira o endereço IP do servidor nextcloud. Preencha as informações e clique em "Instalar".
-
+     No navegador insira o endereço IP do servidor nextcloud. Preencha as informações e clique em "Instalar".
+     
  10. **Limite de memória do PHP**
-
-    O Nextcloud recomenda um limite de, pelo menos, 512M para o PHP. Edite o arquivo `/etc/php.ini` e ajuste o valor da variável `memory_limit` para que 512M. Caso seu sistema tenha bastante memória RAM disponível, você pode utilizar um valor maior. Feito esse ajuste, execute o comando `systemctl restart php-php.service`.
-
-11. **Memory caching**
+     
+     O Nextcloud recomenda um limite de, pelo menos, 512M para o PHP. Edite o arquivo `/etc/php.ini` e ajuste o valor da variável `memory_limit` para 512M. Caso seu sistema tenha bastante memória RAM disponível, você pode utilizar um valor maior. Feito esse ajuste, execute o comando `systemctl restart php-php.service`.
+ 
+ 11. **Memory caching**
 
     Configurar PHP Opcache:
 
@@ -292,17 +335,16 @@ su - root
     'htaccess.RewriteBase' => '/nextcloud',
     ```
 
-14.  **Tarefas em segundo plano**  
-    Execute o comando:
+14.  **Tarefas em segundo plano**
+Execute o comando:
 
-    ```
-    crontab -u apache -e
-    ```
+```
+crontab -u apache -e
+```
 
-    Este comando abrirá o arquivo Cron do Apache com o editor de texto Vi. Insira esta linha
+Este comando abrirá o arquivo Cron do Apache com o editor de texto Vi. Insira esta linha
 
-    ```
-    */5  *  *  *  * php -f /var/www/html/nextcloud/cron.php
-    ```
-
-    Acesse as configurações do Nextcloud > Administração > Configurações básicas > Tarefas em segundo plano e selecione a opção "Cron".
+```
+*/5  *  *  *  * php -f /var/www/html/nextcloud/cron.php
+```
+Acesse as configurações do Nextcloud > Administração > Configurações básicas > Tarefas em segundo plano e selecione a opção "Cron".
