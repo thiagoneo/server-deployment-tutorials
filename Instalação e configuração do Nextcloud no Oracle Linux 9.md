@@ -1,4 +1,4 @@
-## Instalação e configuração do Nextcloud no Oracle Linux 9
+## Instalação e configuração do Nextcloud no Oracle Linux 9 (LAMP)
 
 *1 de junho de 2024, Thiago S. Ferreira*
 
